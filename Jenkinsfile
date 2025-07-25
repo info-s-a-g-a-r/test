@@ -45,7 +45,7 @@ pipeline {
                     def serviceUrl = ""
                     timeout(time: 5, unit: 'MINUTES') {
                         while(serviceUrl == "") {
-                            serviceUrl = sh(script: "kubectl get svc dev/test-jenk-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'", returnStdout: true).trim()
+                            serviceUrl = sh(script: "kubectl get svc my-app-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'", returnStdout: true).trim()
                             if(serviceUrl == "") {
                                 echo "Waiting for LoadBalancer IP..."
                                 sleep 10

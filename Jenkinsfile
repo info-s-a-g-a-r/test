@@ -3,7 +3,7 @@ pipeline {
     environment {
         AWS_REGION = "ap-south-1" // e.g., us-east-1
         ECR_REGISTRY = "036616702180.dkr.ecr.ap-south-1.amazonaws.com"
-        IMAGE_NAME = "my-app" // e.g., my-app
+        IMAGE_NAME = "dev/test-jenk" // e.g., my-app
         CLUSTER_NAME = "traya-dev-eks-cluster" // e.g., my-eks-cluster
     }
     stages {
@@ -45,7 +45,7 @@ pipeline {
                     def serviceUrl = ""
                     timeout(time: 5, unit: 'MINUTES') {
                         while(serviceUrl == "") {
-                            serviceUrl = sh(script: "kubectl get svc my-app-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'", returnStdout: true).trim()
+                            serviceUrl = sh(script: "kubectl get svc dev/test-jenk-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'", returnStdout: true).trim()
                             if(serviceUrl == "") {
                                 echo "Waiting for LoadBalancer IP..."
                                 sleep 10

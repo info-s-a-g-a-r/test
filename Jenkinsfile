@@ -5,6 +5,8 @@ pipeline {
         ECR_REGISTRY = "036616702180.dkr.ecr.ap-south-1.amazonaws.com"
         IMAGE_NAME = "dev/test-jenk" // e.g., my-app
         CLUSTER_NAME = "traya-dev-eks-cluster" // e.g., my-eks-cluster
+        DOCKER_CLI_EXPERIMENTAL = 'enabled'
+        
     }
     stages {
         stage('Checkout') {
@@ -12,10 +14,17 @@ pipeline {
                 checkout scm
             }
         }
+        stage('Login to ECR') {
+            steps {
+                script {
+                    sh 'aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 036616702180.dkr.ecr.ap-south-1.amazonaws.com'
+                }
+            }
+        }
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh "docker buildx build -t ${ECR_REGISTRY}/${IMAGE_NAME}:latest ."
+                    sh 'docker build -t 036616702180.dkr.ecr.ap-south-1.amazonaws.com/dev/test-jenk:latest .'
                 }
             }
         }

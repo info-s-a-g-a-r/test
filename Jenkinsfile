@@ -15,7 +15,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    docker.build("${ECR_REGISTRY}/${IMAGE_NAME}:latest")
+                    sh "docker buildx build -t ${ECR_REGISTRY}/${IMAGE_NAME}:latest ."
                 }
             }
         }

@@ -1,47 +1,36 @@
 pipeline {
     agent any
+    environment {
+        AWS_REGION = 'ap-south-1' // Replace with your AWS region
+        ECR_REGISTRY = '036616702180.dkr.ecr.ap-south-1.amazonaws.com' // Replace with your ECR registry
+        IMAGE_NAME = "${ECR_REGISTRY}/test-jenk" // Replace 'myapp' with your ECR repo name
+    }
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
-            }
-        }
-        stage('Login to ECR') {
-            steps {
-                script {
-                    sh 'aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 036616702180.dkr.ecr.ap-south-1.amazonaws.com'
-                }
+                git branch: 'main', url: 'https://github.com/your-username/your-repo-name.git'
             }
         }
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'docker build -t 036616702180.dkr.ecr.ap-south-1.amazonaws.com/dev/test-jenk:latest .'
+                    def imageTag = "${env.BUILD_NUMBER}" // Use Jenkins build number as tag
+                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
+                    sh "docker build -t ${IMAGE_NAME}:${imageTag} ."
+                    sh "docker tag ${IMAGE_NAME}:${imageTag} ${IMAGE_NAME}:latest"
                 }
             }
         }
-        stage('Push to ECR') {
-            steps {
-                script {
-                    sh 'docker push 036616702180.dkr.ecr.ap-south-1.amazonaws.com/dev/test-jenk:latest'
-                }
-            }
+    }
+    post {
+        always {
+            sh 'docker logout' // Clean up Docker login
         }
-        stage('Deploy to EKS') {
-            steps {
-                script {
-                    echo 'Deploying to EKS...'
-                    // Add kubectl commands here, e.g., sh 'kubectl apply -f deployment.yaml'
-                }
-            }
+        success {
+            echo 'Docker image built successfully!'
         }
-        stage('Get Service URL') {
-            steps {
-                script {
-                    echo 'Retrieving service URL...'
-                    // Add command to get service URL, e.g., sh 'kubectl get svc -o jsonpath="{.items[0].status.loadBalancer.ingress[0].hostname}"'
-                }
-            }
+        failure {
+            echo 'Docker image build failed.'
         }
     }
 }

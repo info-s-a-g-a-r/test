@@ -21,16 +21,6 @@ pipeline {
                 }
             }
         }
-        stage('Deploy to EKS') {
-            steps {
-                withAWS(credentials: 'aws-ecr-credentials', region: "${AWS_REGION}") {
-                   sh '''
-                        aws eks update-kubeconfig --region $AWS_REGION --name traya-dev-eks-cluster
-                        kubectl apply -f deployment.yml
-                      '''
-        }
-    }
-}
     }
     post {
         always {

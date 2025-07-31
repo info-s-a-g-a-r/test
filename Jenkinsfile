@@ -2,10 +2,10 @@ pipeline {
     agent any
     environment {
         AWS_REGION = 'us-east-1' // Replace with your AWS region
-        ECR_REGISTRY = '123456789012.dkr.ecr.us-east-1.amazonaws.com' // Replace with your ECR registry
-        ECR_REPOSITORY = 'my-app-repo' // Replace with your ECR repo name
+        ECR_REGISTRY = '036616702180.dkr.ecr.ap-south-1.amazonaws.com' // Replace with your ECR registry
+        ECR_REPOSITORY = 'test-jenk' // Replace with your ECR repo name
         IMAGE_TAG = "${env.BUILD_NUMBER}" // Use Jenkins build number as image tag
-        AWS_CREDENTIALS_ID = 'aws-ecr-credentials' // Credential ID from Jenkins
+        AWS_CREDENTIALS_ID = 'AWS-CRED' // Credential ID from Jenkins
         KUBE_CREDENTIALS_ID = 'kubeconfig' // Optional: Kubernetes credentials ID
     }
     stages {

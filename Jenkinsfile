@@ -28,26 +28,30 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Create the full image tag by combining base tag, build number, and a short git commit hash
-                    // The 'currentBuild.number' is a built-in Jenkins variable
-                    def newImageTag = "${BASE_IMAGE_TAG}-${currentBuild.number}-${env.GIT_COMMIT.take(7)}"
+                    // Create the unique, long-lived tag for this specific build
+                    def uniqueTag = "${BASE_IMAGE_TAG}-${currentBuild.number}-${env.GIT_COMMIT.take(7)}"
                     
-                    // Build the Docker image with the new, unique tag
-                    def dockerImage = docker.build("${ECR_REGISTRY}/${ECR_REPOSITORY}:${newImageTag}", ".")
+                    // Build the Docker image with the unique tag
+                    docker.build("${ECR_REGISTRY}/${ECR_REPOSITORY}:${uniqueTag}", ".")
+
+                    // Also tag the image with 'latest'
+                    sh "docker tag ${ECR_REGISTRY}/${ECR_REPOSITORY}:${uniqueTag} ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
                     
-                    // Store the full image name in an environment variable for the next stage
-                    env.FULL_IMAGE_NAME = "${ECR_REGISTRY}/${ECR_REPOSITORY}:${newImageTag}"
+                    // Store both full image names in environment variables
+                    env.UNIQUE_IMAGE_NAME = "${ECR_REGISTRY}/${ECR_REPOSITORY}:${uniqueTag}"
+                    env.LATEST_IMAGE_NAME = "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
                 }
             }
         }
         stage('Push to ECR') {
             steps {
                 script {
-                    // Correctly use the withAWS step
                     withAWS(credentials: AWS_CREDENTIALS_ID, region: AWS_REGION) {
                         sh """
                             aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
-                            docker push ${env.FULL_IMAGE_NAME}
+                            # Push both the unique tag and the 'latest' tag
+                            docker push ${env.UNIQUE_IMAGE_NAME}
+                            docker push ${env.LATEST_IMAGE_NAME}
                         """
                     }
                 }
@@ -56,13 +60,14 @@ pipeline {
     }
     post {
         always {
-            // Use env.FULL_IMAGE_NAME to remove the exact image that was built and pushed
-            // The || true is a good practice to prevent the pipeline from failing if the image doesn't exist
-            sh "docker rmi ${env.FULL_IMAGE_NAME} || true"
+            // Clean up both the unique tag and the latest tag from the local Jenkins agent
+            sh "docker rmi ${env.UNIQUE_IMAGE_NAME} || true"
+            sh "docker rmi ${env.LATEST_IMAGE_NAME} || true"
             cleanWs()
         }
         success {
-            echo "CI succeeded! Image: ${env.FULL_IMAGE_NAME}"
+            echo "CI succeeded! Latest image: ${env.LATEST_IMAGE_NAME}"
+            echo "Unique image: ${env.UNIQUE_IMAGE_NAME}"
         }
         failure {
             echo "CI failed!"

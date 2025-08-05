@@ -23,27 +23,34 @@ pipeline {
             }
         }
         
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    def dockerImage = docker.build("${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}", ".")
-                    env.DOCKER_IMAGE = dockerImage.id
-                }
-            }
+       stage('Build Docker Image') {
+    steps {
+        script {
+            // Get the current build number
+            def buildNumber = currentBuild.number
+            // Define a new image tag that includes the build number
+            def newImageTag = "${IMAGE_TAG}-${buildNumber}"
+            
+            // Build the Docker image with the new tag
+            def dockerImage = docker.build("${ECR_REGISTRY}/${ECR_REPOSITORY}:${newImageTag}", ".")
+            
+            // Set the new full image name in an environment variable for later stages
+            env.FULL_IMAGE_NAME = "${ECR_REGISTRY}/${ECR_REPOSITORY}:${newImageTag}"
         }
-        stage('Push to ECR') {
-            steps {
-                script {
-                    withAWS(credentials: AWS_CREDENTIALS_ID, region: AWS_REGION) {
-                        sh """
-                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
-                            docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
-                        """
-                    }
-                }
+    }
+}
+stage('Push to ECR') {
+    steps {
+        script {
+            withAWS(credentials: AWS_CREDENTIALS_ID, region: AWS_REGION) {
+                sh """
+                    aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                    docker push ${FULL_IMAGE_NAME}
+                """
             }
         }
     }
+}
     post {
         always {
             sh "docker rmi ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} || true"

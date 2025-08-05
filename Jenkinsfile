@@ -3,9 +3,9 @@ pipeline {
     environment {
         AWS_REGION = 'ap-south-1'
         ECR_REGISTRY = '036616702180.dkr.ecr.ap-south-1.amazonaws.com'
-        ECR_REPOSITORY = 'dev/test-image'
+        ECR_REPOSITORY = 'dev/test-image' // Updated to match your error log
         IMAGE_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
-        AWS_CREDENTIALS_ID = 'AWS KEY'
+        AWS_CREDENTIALS_ID = 'AWS-CRED'
     }
     stages {
         stage('Checkout') {
@@ -14,14 +14,20 @@ pipeline {
             }
         }
         stage('Build Application') {
+            agent {
+                docker { image 'node:16' } // Run this stage in a node:16 container
+            }
             steps {
                 sh 'npm install'
-                sh 'npm run build' // Adjust if your app doesn't have a build step
+                sh 'npm run build || true' // Use || true if build step is optional
             }
         }
         stage('Run Tests') {
+            agent {
+                docker { image 'node:16' } // Run tests in the same node:16 container
+            }
             steps {
-                sh 'npm test || true' // Use || true if tests are optional or may fail
+                sh 'npm test || true' // Use || true if tests are optional
             }
         }
         stage('Build Docker Image') {

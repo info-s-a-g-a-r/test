@@ -5,7 +5,7 @@ pipeline {
         ECR_REGISTRY = '036616702180.dkr.ecr.ap-south-1.amazonaws.com'
         ECR_REPOSITORY = 'dev/test-image' // Updated to match your error log
         IMAGE_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
-        AWS_CREDENTIALS_ID = 'AWS KEY'
+        AWS_CREDENTIALS_ID = '5a88723e-cde2-4bb6-b062-b6d63467e683'
     }
     stages {
         stage('Checkout') {

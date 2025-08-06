@@ -1,4 +1,3 @@
-```groovy
 pipeline {
     agent any // Single agent to maintain Docker context
 

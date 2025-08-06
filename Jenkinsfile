@@ -1,4 +1,4 @@
-```groovy
+
 pipeline {
     agent {
         docker { image 'node:16' } // Use node:16 as the base agent for consistency
@@ -103,4 +103,3 @@ pipeline {
         }
     }
 }
-```

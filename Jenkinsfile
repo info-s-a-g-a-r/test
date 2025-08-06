@@ -11,6 +11,7 @@ pipeline {
         // --- New Environment Variables for CD ---
         KUBECONFIG_CREDENTIALS_ID = 'k8s-kubeconfig' // The ID of your Jenkins secret file
         K8S_NAMESPACE = 'default' // Your Kubernetes target namespace
+        UNIQUE_IMAGE_NAME = "${env.UNIQUE_IMAGE_NAME ?: '036616702180.dkr.ecr.ap-south-1.amazonaws.com/dev/test-image:build-14-' + env.GIT_COMMIT.take(7)}"
     }
     
     stages {

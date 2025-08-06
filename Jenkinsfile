@@ -9,6 +9,8 @@ pipeline {
         AWS_CREDENTIALS_ID = '5a88723e-cde2-4bb6-b062-b6d63467e683'
         UNIQUE_IMAGE_NAME = "${ECR_REGISTRY}/${ECR_REPOSITORY}:${BASE_IMAGE_TAG}-${currentBuild.number}-${env.GIT_COMMIT.take(7)}"
         LATEST_IMAGE_NAME = "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
+        KUBECONFIG_FILE = '/home/ubuntu/.kube/config' // Or use credentials binding
+
     }
 
     stages {

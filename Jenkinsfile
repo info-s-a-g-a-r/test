@@ -1,5 +1,5 @@
 pipeline {
-    agent none // Define no global agent; specify agents per stage
+    agent any // Use a single agent for consistency across Docker-related stages
 
     environment {
         AWS_REGION = 'ap-south-1'
@@ -7,13 +7,12 @@ pipeline {
         ECR_REPOSITORY = 'dev/test-image'
         BASE_IMAGE_TAG = 'build'
         AWS_CREDENTIALS_ID = '5a88723e-cde2-4bb6-b062-b6d63467e683'
-        KUBECONFIG_CREDENTIALS_ID = 'k8s-kubeconfig' // Jenkins secret file ID for kubeconfig
-        K8S_NAMESPACE = 'default' // Kubernetes target namespace
+        KUBECONFIG_CREDENTIALS_ID = 'k8s-kubeconfig'
+        K8S_NAMESPACE = 'default'
     }
 
     stages {
         stage('Checkout') {
-            agent any
             steps {
                 checkout scm
             }
@@ -25,34 +24,50 @@ pipeline {
             }
             steps {
                 sh 'npm install'
-                // Uncomment the following line if build step is required
+                // Uncomment if build step is required
                 // sh 'npm run build'
             }
         }
 
         stage('Build Docker Image') {
-            agent any
             steps {
                 script {
                     def uniqueTag = "${BASE_IMAGE_TAG}-${currentBuild.number}-${env.GIT_COMMIT.take(7)}"
-                    def image = docker.build("${ECR_REGISTRY}/${ECR_REPOSITORY}:${uniqueTag}", ".")
-                    sh "docker tag ${ECR_REGISTRY}/${ECR_REPOSITORY}:${uniqueTag} ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
                     env.UNIQUE_IMAGE_NAME = "${ECR_REGISTRY}/${ECR_REPOSITORY}:${uniqueTag}"
                     env.LATEST_IMAGE_NAME = "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
+                    
+                    // Build the Docker image
+                    def image = docker.build("${env.UNIQUE_IMAGE_NAME}", ".")
+                    
+                    // Verify the image exists
+                    sh "docker images ${env.UNIQUE_IMAGE_NAME} --format '{{.Repository}}:{{.Tag}}'"
+                    
+                    // Tag the image as latest
+                    sh "docker tag ${env.UNIQUE_IMAGE_NAME} ${env.LATEST_IMAGE_NAME}"
+                    
+                    // Verify the latest tag exists
+                    sh "docker images ${env.LATEST_IMAGE_NAME} --format '{{.Repository}}:{{.Tag}}'"
                 }
             }
         }
 
         stage('Push to ECR') {
-            agent any
             steps {
                 script {
                     withAWS(credentials: AWS_CREDENTIALS_ID, region: AWS_REGION) {
-                        sh """
+                        // Configure Docker credential helper to avoid unencrypted password storage
+                        sh '''
+                            mkdir -p ~/.docker
+                            echo '{"credsStore": "ecr-login"}' > ~/.docker/config.json
                             aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
-                            docker push ${env.UNIQUE_IMAGE_NAME}
-                            docker push ${env.LATEST_IMAGE_NAME}
-                        """
+                        '''
+                        
+                        // Verify images before pushing
+                        sh "docker images ${env.UNIQUE_IMAGE_NAME} --format '{{.Repository}}:{{.Tag}}'"
+                        
+                        // Push both tags
+                        sh "docker push ${env.UNIQUE_IMAGE_NAME}"
+                        sh "docker push ${env.LATEST_IMAGE_NAME}"
                     }
                 }
             }
@@ -65,10 +80,7 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: KUBECONFIG_CREDENTIALS_ID, variable: 'KUBECONFIG_FILE')]) {
                     script {
-                        // Ensure deployment.yml exists before proceeding
                         sh 'test -f deployment.yml || { echo "Error: deployment.yml not found"; exit 1; }'
-                        
-                        // Set KUBECONFIG and deploy
                         sh """
                             export KUBECONFIG=\${KUBECONFIG_FILE}
                             sed -i "s|IMAGE_TO_DEPLOY|\${UNIQUE_IMAGE_NAME}|g" deployment.yml

@@ -57,7 +57,7 @@ pipeline {
                    // sh '''
                      //  kubectl --kubeconfig=$KUBECONFIG_FILE set image deployment/my-app-deployment my-app-container=036616702180.dkr.ecr.ap-south-1.amazonaws.com/dev/test-image:build-44-dea1ccd
                      //'''
-                    } // <-- This brace was missing in your original code.
+                  //  } // <-- This brace was missing in your original code.
                 }
             }
         }

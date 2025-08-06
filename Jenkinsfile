@@ -51,8 +51,11 @@ pipeline {
             steps {
                 script {
                     echo "Deploying image ${env.UNIQUE_IMAGE_NAME} to Kubernetes..."
-                    // A better way is to use `kubectl set image` or `kubectl patch`
-                    sh "kubectl set image deployment/my-app-deployment my-app-container=${env.UNIQUE_IMAGE_NAME}"
+                    // Use withCredentials to inject the kubeconfig file securely
+                    // Replace 'kubernetes-config' with the ID of your Jenkins secret file credential
+                    withCredentials([file(credentialsId: 'kubernetes-config', variable: 'KUBECONFIG_FILE')]) {
+                        sh "kubectl --kubeconfig=$KUBECONFIG_FILE set image deployment/my-app-deployment my-app-container=${env.UNIQUE_IMAGE_NAME}"
+
                 }
             }
         }

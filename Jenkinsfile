@@ -59,26 +59,26 @@ pipeline {
         }
         
         stage('Deploy to Kubernetes') {
-            agent {
-                docker {
-                    image 'bitnami/kubectl:latest'
-                    args '--entrypoint=/bin/sh'
-                }
-            }
-            steps {
-                withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIALS_ID}", variable: 'KUBECONFIG_FILE')]) {
-                    sh(script: """
-                        # Dynamically replace the IMAGE_TO_DEPLOY placeholder in the YAML file
-                        sed -i "s|IMAGE_TO_DEPLOY|${env.UNIQUE_IMAGE_NAME}|g" deployment.yml
-                        
-                        echo "--- Applying Kubernetes manifest with new image tag: ${env.UNIQUE_IMAGE_NAME} ---"
-                        
-                        # Apply the Kubernetes manifest to the cluster
-                        kubectl apply -f deployment.yml --namespace=${K8S_NAMESPACE}
-                    """, env: ["KUBECONFIG=${KUBECONFIG_FILE}"])
-                }
-            }
+    agent {
+        docker { image 'bitnami/kubectl:latest' }
+    }
+    steps {
+        withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIALS_ID}", variable: 'KUBECONFIG_FILE')]) {
+            sh """
+                # Set the KUBECONFIG environment variable
+                export KUBECONFIG=${KUBECONFIG_FILE}
+                
+                # Dynamically replace the IMAGE_TO_DEPLOY placeholder in the YAML file
+                sed -i "s|IMAGE_TO_DEPLOY|${env.UNIQUE_IMAGE_NAME}|g" deployment.yml
+                
+                echo "--- Applying Kubernetes manifest with new image tag: ${env.UNIQUE_IMAGE_NAME} ---"
+                
+                # Apply the Kubernetes manifest to the cluster
+                kubectl apply -f deployment.yml --namespace=${K8S_NAMESPACE}
+            """
         }
+    }
+}
     }
     
     post {

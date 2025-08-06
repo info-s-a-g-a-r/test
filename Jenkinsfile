@@ -8,8 +8,11 @@ pipeline {
         BASE_IMAGE_TAG = 'build'
         AWS_CREDENTIALS_ID = '5a88723e-cde2-4bb6-b062-b6d63467e683'
         
+        // --- New Environment Variables for CD ---
+        KUBECONFIG_CREDENTIALS_ID = 'k8s-kubeconfig' // The ID of your Jenkins secret file
+        K8S_NAMESPACE = 'default' // Your Kubernetes target namespace
+        
         // The image tags are defined here to ensure consistency across stages
-        // The variable values are automatically set at the start of the pipeline
         UNIQUE_IMAGE_NAME = "${ECR_REGISTRY}/${ECR_REPOSITORY}:${BASE_IMAGE_TAG}-${currentBuild.number}-${env.GIT_COMMIT.take(7)}"
         LATEST_IMAGE_NAME = "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
     }
@@ -49,6 +52,31 @@ pipeline {
                 }
             }
         }
+        
+        // --- CD Stage for Kubernetes Deployment ---
+        stage('Deploy to Kubernetes') {
+            agent {
+                docker {
+                    image 'bitnami/kubectl:latest'
+                    args '--entrypoint=/bin/sh' // Use this to ensure a shell is available
+                }
+            }
+            steps {
+                withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIALS_ID}", variable: 'KUBECONFIG_FILE')]) {
+                    sh(script: """
+                        # Dynamically replace the IMAGE_TO_DEPLOY placeholder in the YAML file.
+                        sed -i "s|IMAGE_TO_DEPLOY|${env.UNIQUE_IMAGE_NAME}|g" deployment.yml
+                        
+                        echo "--- Applying Kubernetes manifest with new image tag: ${env.UNIQUE_IMAGE_NAME} ---"
+                        
+                        # Apply the Kubernetes manifest to the cluster.
+                        kubectl apply -f deployment.yml --namespace=${K8S_NAMESPACE}
+                        
+                        echo "Deployment command executed."
+                    """, env: ["KUBECONFIG=${KUBECONFIG_FILE}"])
+                }
+            }
+        }
     }
 
     post {
@@ -58,10 +86,10 @@ pipeline {
             cleanWs()
         }
         success {
-            echo "Pipeline succeeded! Pushed image: ${env.UNIQUE_IMAGE_NAME}"
+            echo "CI/CD pipeline succeeded! Deployed image: ${env.UNIQUE_IMAGE_NAME}"
         }
         failure {
-            echo "Pipeline failed!"
+            echo "CI/CD pipeline failed!"
         }
     }
 }

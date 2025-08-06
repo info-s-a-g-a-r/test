@@ -46,6 +46,16 @@ pipeline {
                 }
             }
         }
+     // --- NEW STAGE FOR DEPLOYMENT ---
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    echo "Deploying image ${env.UNIQUE_IMAGE_NAME} to Kubernetes..."
+                    // A better way is to use `kubectl set image` or `kubectl patch`
+                    sh "kubectl set image deployment/my-app-deployment my-app-container=${env.UNIQUE_IMAGE_NAME}"
+                }
+            }
+        }
     }
 
     post {

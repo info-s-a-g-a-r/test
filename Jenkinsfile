@@ -53,7 +53,7 @@ pipeline {
                     echo "Deploying image ${env.UNIQUE_IMAGE_NAME} to Kubernetes..."
                     // Use withCredentials to inject the kubeconfig file securely
                     // Replace 'kubernetes-config' with the ID of your Jenkins secret file credential
-                    withCredentials([file(credentialsId: 'kubernetes-config', variable: 'KUBECONFIG_FILE')]) {
+                    withCredentials([file(credentialsId: 'k8s-kubeconfig', variable: 'KUBECONFIG_FILE')]) {
                         sh "kubectl --kubeconfig=$KUBECONFIG_FILE set image deployment/my-app-deployment my-app-container=${env.UNIQUE_IMAGE_NAME}"
                     } // <-- This brace was missing in your original code.
                 }

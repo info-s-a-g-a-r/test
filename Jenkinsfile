@@ -57,7 +57,7 @@ pipeline {
                     // Replace 'kubernetes-config' with the ID of your Jenkins secret file credential
                        withCredentials([file(credentialsId: 'k8s-kubeconfig', variable: 'KUBECONFIG_FILE')]) {
                       sh '''
-                        kubectl --kubeconfig=$KUBECONFIG_FILE set image deployment/my-app-deployment my-app-container=036616702180.dkr.ecr.ap-south-1.amazonaws.com/dev/test-image:build-44-dea1ccd
+                        kubectl --kubeconfig=$KUBECONFIG_FILE set image deployment/test-app-deployment test-app-container=036616702180.dkr.ecr.ap-south-1.amazonaws.com/dev/test-image:build-44-dea1ccd
                        '''
                    } // <-- This brace was missing in your original code.
                 }

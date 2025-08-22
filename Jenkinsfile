@@ -35,7 +35,7 @@ pipeline {
 
         stage('Push to ECR') {
             steps {
-                script {
+                script { 
                     echo "Pushing images: ${env.UNIQUE_IMAGE_NAME} and ${env.LATEST_IMAGE_NAME}"
                     withAWS(credentials: AWS_CREDENTIALS_ID, region: AWS_REGION) {
                         sh """

@@ -1,31 +1,48 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: my-app
+  # The name of your deployment
+  name: test-app-deployment
+  # Labels to help organize your Kubernetes objects
+  labels:
+    app: test-app
 spec:
+  # Number of desired replicas (pods) to run
   replicas: 3
   selector:
     matchLabels:
-      app: my-app
+      app: test-app
   template:
     metadata:
       labels:
-        app: my-app
+        app: test-app
     spec:
       containers:
-      - name: my-app
-        image: IMAGE_TAG # Placeholder replaced by pipeline
+      - name: test-app-container
+        # Placeholder for the image. Your Jenkinsfile will replace this.
+        # It will be something like: 036616702180.dkr.ecr.ap-south-1.amazonaws.com/dev/test-image:build-123-c188270
+        image: image: 036616702180.dkr.ecr.ap-south-1.amazonaws.com/dev/test-image:latest
+
         ports:
-        - containerPort: 8080
+        # The port your application is listening on inside the container
+        - containerPort: 3000
+      # ImagePullSecrets are required to authenticate with a private registry like ECR
+      imagePullSecrets:
+      - name: ecr-credentials-secret # This name must match the secret you create in Kubernetes
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: my-app-service
+  name: test-app-service
 spec:
+  # The service will route traffic to pods with this label
   selector:
-    app: my-app
+    app: test-app
   ports:
+  # The port the service itself will listen on (e.g., public port 80)
   - port: 80
-    targetPort: 8080
+    # The port of the container that the service will forward traffic to
+    targetPort: 3000
+  # Type of service. LoadBalancer is common for exposing a service publicly.
+  # Other options include ClusterIP or NodePort depending on your needs.
   type: LoadBalancer

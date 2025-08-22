@@ -21,7 +21,7 @@ spec:
       - name: test-app-container
         # Placeholder for the image. Your Jenkinsfile will replace this.
         # It will be something like: 036616702180.dkr.ecr.ap-south-1.amazonaws.com/dev/test-image:build-123-c188270
-        image: image: 036616702180.dkr.ecr.ap-south-1.amazonaws.com/dev/test-image:latest
+        image: 036616702180.dkr.ecr.ap-south-1.amazonaws.com/dev/test-image:latest
 
         ports:
         # The port your application is listening on inside the container
